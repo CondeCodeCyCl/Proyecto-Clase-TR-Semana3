@@ -37,6 +37,7 @@ public class PacienteServiceImpl implements PacienteService {
 	}
 	
 	@Override
+	@Transactional(readOnly = true)
 	public PacienteResponse obtenerPacientePorIdSinEstado(Long id) {
 		log.info("Buscando paciente sin estado con id: {}", id);
 		return pacienteMapper.entityToResponse(pacienteRepository.findById(id).orElseThrow(() ->
@@ -45,7 +46,7 @@ public class PacienteServiceImpl implements PacienteService {
 
 	@Override
 	public PacienteResponse registrar(PacienteRequest request) {
-		log.info("Registrando nuevo paciente", request);
+		log.info("Registrando nuevo paciente: {}", request);
 
 		validarEmailUnico(request.email());
 		validarTelefonoUnico(request.telefono());
@@ -67,27 +68,33 @@ public class PacienteServiceImpl implements PacienteService {
 	@Override
 	public PacienteResponse actualizar(PacienteRequest request, Long id) {
 		Paciente paciente = obtenerPacienteOException(id);
+		
 		log.info("Actualizando paciente con id: {}", id);
 
-		validarTelefonoEmailUnicosExcluyendoId(request, id);
+		validarCambiosUnicos(request, id);
 		
 		boolean telefonoCambio = !paciente.getTelefono().equals(request.telefono());
 		
-		pacienteMapper.updateEntityFromRequest(request, paciente);
 		
 		if(telefonoCambio) {
 			paciente.setTelefono(request.telefono());
 			paciente.setNumExpediente(obtenerNoExpediente(request.telefono()));
 		}
-		
-		boolean cambioIMC = !paciente.getPeso().equals(request.peso()) || !paciente.getEstatura().equals(request.estatura());
+
+		boolean cambioIMC = !paciente.getPeso().equals(request.peso()) 
+				|| !paciente.getEstatura().equals(request.estatura());
+
 
 		if(cambioIMC) {
-			paciente.setImc(obtenerIMCPaciente(request.peso(),request.estatura()));
 			paciente.setPeso(request.peso());
 			paciente.setEstatura(request.estatura());
+			paciente.setImc(obtenerIMCPaciente(request.peso(),request.estatura()));
 		}
 		
+	   // paciente.setImc(obtenerIMCPaciente(paciente.getPeso(), paciente.getEstatura()));
+		
+		pacienteMapper.updateEntityFromRequest(request, paciente);
+
 
 		log.info("Paciente con id {} actualizado", id);
 
@@ -126,7 +133,7 @@ public class PacienteServiceImpl implements PacienteService {
 		}
 	}
 	
-	private void validarTelefonoEmailUnicosExcluyendoId(PacienteRequest request, Long id) {
+	private void validarCambiosUnicos(PacienteRequest request, Long id) {
 		if (pacienteRepository.existsByEmailAndEstadoRegistroAndIdNot(request.email().toLowerCase(), EstadoRegistro.ACTIVO, id)) {
 			throw new IllegalArgumentException("El correo ya está registrado en un paciente activo");
 		}
@@ -136,10 +143,8 @@ public class PacienteServiceImpl implements PacienteService {
 		}
 	}
 
-
 	public Double obtenerIMCPaciente(Double peso, Double estatura) {
-		
-		return peso / (estatura * estatura);
+		    return peso / (estatura * estatura);
 	}
 
 	public String validarEmail(String email) {
@@ -154,7 +159,6 @@ public class PacienteServiceImpl implements PacienteService {
 		}
 		return email;
 	}
-
 	
 	public String obtenerNoExpediente(String telefono) {
 		
