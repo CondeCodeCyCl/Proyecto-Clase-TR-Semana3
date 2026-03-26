@@ -11,28 +11,32 @@ import com.carlos.citas.services.CitaService;
 import com.carlos.commons.controllers.CommonController;
 import jakarta.validation.constraints.Positive;
 
-
 @RestController
 @Validated
-public class CitaController extends CommonController<CitaRequest, CitaResponse, CitaService>{
-	
+public class CitaController extends CommonController<CitaRequest, CitaResponse, CitaService> {
+
 	public CitaController(CitaService service) {
 		super(service);
 	}
-	
+
 	@GetMapping("/id-cita/{id}")
-	public ResponseEntity<CitaResponse> obtenerPorIdSinEstado(@PathVariable
-			@Positive(message = "El ID debe ser positivio") Long id){
+	public ResponseEntity<CitaResponse> obtenerPorIdSinEstado(
+			@PathVariable @Positive(message = "El ID debe ser positivio") Long id) {
 		return ResponseEntity.ok(service.obtenerCitaPorIdSinEstado(id));
 	}
-	
+
 	@PatchMapping("/{idCita}/estado/{idEstado}")
-	public ResponseEntity<CitaResponse> cambiarEstado(
-			@PathVariable Long idCita,
-			@PathVariable Long idEstado) {
-		
+	public ResponseEntity<CitaResponse> cambiarEstado(@PathVariable Long idCita, @PathVariable Long idEstado) {
 		return ResponseEntity.ok(service.cambiarEstado(idCita, idEstado));
 	}
 
+	@GetMapping("/medicos/{idMedico}/tieneCitasActivas")
+	public ResponseEntity<Boolean> medicoTieneCitasActivas(@PathVariable Long idMedico) {
+		return ResponseEntity.ok(service.medicoTieneCitasActivas(idMedico));
+	}
 
+	@GetMapping("/pacientes/{idPaciente}/tieneCitasActivas")
+	public ResponseEntity<Boolean> pacienteTieneCitasActivas(@PathVariable Long idPaciente) {
+		return ResponseEntity.ok(service.pacienteTieneCitasActivas(idPaciente));
+	}
 }

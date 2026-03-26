@@ -7,12 +7,13 @@ import java.util.List;
 import java.util.Optional;
 import com.carlos.commons.enums.EstadoRegistro;
 
-
 @Repository
 public interface CitaRepository extends JpaRepository<Cita, Long>{
 	
 	List<Cita> findByEstadoRegistro(EstadoRegistro estadoRegistro);
+	
 	Optional <Cita> findByIdAndEstadoRegistro(Long id, EstadoRegistro estadoRegistro);
+	
 	
 	boolean existsByIdPacienteAndEstadoRegistroAndEstadoCitaIn(
 		    Long idPaciente, 
@@ -21,10 +22,13 @@ public interface CitaRepository extends JpaRepository<Cita, Long>{
 		);
 	
 	boolean existsByIdPacienteAndEstadoRegistroAndEstadoCitaInAndIdNot(
-		    Long idPaciente, 
-		    EstadoRegistro estadoRegistro, 
-		    List<EstadoCita> estados, 
-		    Long idCitaExcluida
-		);
-
+			Long idPaciente,
+			EstadoRegistro estadoRegistro,
+			List<EstadoCita> estadoCita, 
+			Long id);
+	
+	boolean existsByIdMedicoAndEstadoRegistroAndEstadoCitaIn(
+			Long idMedico, 
+			EstadoRegistro estadoRegistro, 
+			List<EstadoCita> estadoCita);
 }

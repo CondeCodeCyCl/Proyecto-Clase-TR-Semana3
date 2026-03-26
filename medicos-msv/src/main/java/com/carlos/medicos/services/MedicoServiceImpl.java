@@ -2,11 +2,14 @@ package com.carlos.medicos.services;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.carlos.commons.clients.CitaClient;
 import com.carlos.commons.dto.MedicoRequest;
 import com.carlos.commons.dto.MedicoResponse;
 import com.carlos.commons.enums.DisponibilidadMedico;
 import com.carlos.commons.enums.EspecialidadMedico;
 import com.carlos.commons.enums.EstadoRegistro;
+import com.carlos.commons.exceptions.EntidadRelacionadaException;
 import com.carlos.commons.exceptions.RecursoNoEncontradoException;
 import com.carlos.medicos.entities.Medico;
 import com.carlos.medicos.mappers.MedicoMapper;
@@ -22,6 +25,7 @@ public class MedicoServiceImpl implements MedicoService{
 	
 	private final MedicoRepository medicoRepository;
 	private final MedicoMapper medicoMapper;
+	private final CitaClient citaClient;
 
 	@Override
 	@Transactional(readOnly =true)
@@ -86,8 +90,9 @@ public class MedicoServiceImpl implements MedicoService{
 	public void eliminar(Long id) {
 		Medico medico = obtenerMedicoOException(id);
 		
-		// Consultar citas del médico
-		
+		if(citaClient.medicoTieneCitasActivas(id)) {
+			throw new EntidadRelacionadaException("No se puede eliminar un Médico porque tiene Citas Activas.");
+		}
 		medico.setEstadoRegistro(EstadoRegistro.ELIMINADO);
 		log.info("Médico con id {} ha sido marcado como eliminado", id);
 		
@@ -145,4 +150,6 @@ public class MedicoServiceImpl implements MedicoService{
 	    log.info("Disponibilidad del médico {} cambiada a {}", idMedico, nuevaDisponibilidad.getDescripcion());
 	    return medicoMapper.entityToResponse(medico);
 	}
+	
+	
 }
