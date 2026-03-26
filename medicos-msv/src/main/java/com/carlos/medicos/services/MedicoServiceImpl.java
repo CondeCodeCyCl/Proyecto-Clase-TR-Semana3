@@ -86,6 +86,8 @@ public class MedicoServiceImpl implements MedicoService{
 	public void eliminar(Long id) {
 		Medico medico = obtenerMedicoOException(id);
 		
+		// Consultar citas del médico
+		
 		medico.setEstadoRegistro(EstadoRegistro.ELIMINADO);
 		log.info("Médico con id {} ha sido marcado como eliminado", id);
 		
@@ -133,5 +135,14 @@ public class MedicoServiceImpl implements MedicoService{
 		if(medicoRepository.existsByCedulaProfesionalAndIdNotAndEstadoRegistro(request.cedulaProfesional(), id, EstadoRegistro.ACTIVO)) {
 			throw new IllegalArgumentException("Ya existe un Paciente registrado con la cedula profesional: "+ request.cedulaProfesional());
 		}
+	}
+
+	@Override
+	public MedicoResponse cambiarDisponibilidad(Long idMedico, Long idDisponibilidad) {
+		Medico medico = obtenerMedicoOException(idMedico);
+	    DisponibilidadMedico nuevaDisponibilidad = DisponibilidadMedico.fromCodigo(idDisponibilidad);
+	    medico.setDisponibilidad(nuevaDisponibilidad);
+	    log.info("Disponibilidad del médico {} cambiada a {}", idMedico, nuevaDisponibilidad.getDescripcion());
+	    return medicoMapper.entityToResponse(medico);
 	}
 }

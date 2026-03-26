@@ -6,4 +6,6 @@ import com.carlos.commons.services.CrudService;
 
 public interface CitaService extends CrudService<CitaRequest, CitaResponse>{
 	CitaResponse obtenerCitaPorIdSinEstado(Long id);
+	
+	CitaResponse cambiarEstado(Long idCita, Long idEstado);
 }

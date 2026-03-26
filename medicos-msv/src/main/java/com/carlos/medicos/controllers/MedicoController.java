@@ -3,6 +3,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.carlos.commons.controllers.CommonController;
 import com.carlos.commons.dto.MedicoResponse;
@@ -25,5 +26,14 @@ public class MedicoController extends CommonController <MedicoRequest, MedicoRes
 			@Positive(message = "El ID debe ser positivo") Long id){
 		
 		return ResponseEntity.ok(service.obtenerMedicoPorIdSinEstado(id));
+	}
+	
+	
+	//Creamos endpoint para actualizar disponibilidad del medico
+	@PutMapping("/{idMedico}/disponibilidad/{idDisponibilidad}")
+	public ResponseEntity<MedicoResponse> cambiarDisponibilidad(
+	        @PathVariable Long idMedico, 
+	        @PathVariable Long idDisponibilidad) {
+	    return ResponseEntity.ok(service.cambiarDisponibilidad(idMedico, idDisponibilidad));
 	}
 }

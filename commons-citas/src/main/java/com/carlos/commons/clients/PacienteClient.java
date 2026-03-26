@@ -2,9 +2,11 @@ package com.carlos.commons.clients;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import com.carlos.commons.configuration.FeighClientConfig;
 import com.carlos.commons.dto.PacienteResponse;
 
-@FeignClient(name = "pacientes-msv")
+@FeignClient(name = "pacientes-msv", configuration = FeighClientConfig.class)
 public interface PacienteClient {
 
 	@GetMapping("/{id}")

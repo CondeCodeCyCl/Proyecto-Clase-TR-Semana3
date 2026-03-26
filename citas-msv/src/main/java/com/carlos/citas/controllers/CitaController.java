@@ -2,6 +2,7 @@ package com.carlos.citas.controllers;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import com.carlos.citas.dto.CitaRequest;
@@ -19,11 +20,19 @@ public class CitaController extends CommonController<CitaRequest, CitaResponse, 
 		super(service);
 	}
 	
-	
 	@GetMapping("/id-cita/{id}")
 	public ResponseEntity<CitaResponse> obtenerPorIdSinEstado(@PathVariable
 			@Positive(message = "El ID debe ser positivio") Long id){
 		return ResponseEntity.ok(service.obtenerCitaPorIdSinEstado(id));
 	}
+	
+	@PatchMapping("/{idCita}/estado/{idEstado}")
+	public ResponseEntity<CitaResponse> cambiarEstado(
+			@PathVariable Long idCita,
+			@PathVariable Long idEstado) {
+		
+		return ResponseEntity.ok(service.cambiarEstado(idCita, idEstado));
+	}
+
 
 }
