@@ -2,9 +2,12 @@ package com.carlos.pacientes.services;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.carlos.commons.clients.CitaClient;
 import com.carlos.commons.dto.PacienteRequest;
 import com.carlos.commons.dto.PacienteResponse;
 import com.carlos.commons.enums.EstadoRegistro;
+import com.carlos.commons.exceptions.EntidadRelacionadaException;
 import com.carlos.commons.exceptions.RecursoNoEncontradoException;
 import com.carlos.pacientes.entities.Paciente;
 import com.carlos.pacientes.mappers.PacienteMapper;
@@ -20,6 +23,7 @@ public class PacienteServiceImpl implements PacienteService {
 
 	private final PacienteRepository pacienteRepository;
 	private final PacienteMapper pacienteMapper;
+	private final CitaClient citaClient;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -104,9 +108,12 @@ public class PacienteServiceImpl implements PacienteService {
 	@Override
 	public void eliminar(Long id) {
 		// borrado logico
-		// indica que se va a eliminar del sistema pero no de la base de datos
 		Paciente paciente = obtenerPacienteOException(id);
 		log.info("Eliminando Paciente con id: {}", id);
+		
+		if(citaClient.pacienteTieneCitasActivas(id)) {
+			throw new EntidadRelacionadaException("No se puede eliminar un Paciente porque tiene Citas Activas.");
+		}
 		paciente.setEstadoRegistro(EstadoRegistro.ELIMINADO);
 
 		log.info("Paciente con id {} ha sido marcado como eliminado", id);
