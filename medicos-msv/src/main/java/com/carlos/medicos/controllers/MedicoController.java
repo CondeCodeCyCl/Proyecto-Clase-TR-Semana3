@@ -29,7 +29,7 @@ public class MedicoController extends CommonController <MedicoRequest, MedicoRes
 	}
 	
 	
-	//Creamos endpoint para actualizar disponibilidad del medico
+	//actualizar disponibilidad del medico
 	@PutMapping("/{idMedico}/disponibilidad/{idDisponibilidad}")
 	public ResponseEntity<MedicoResponse> cambiarDisponibilidad(
 	        @PathVariable Long idMedico, 

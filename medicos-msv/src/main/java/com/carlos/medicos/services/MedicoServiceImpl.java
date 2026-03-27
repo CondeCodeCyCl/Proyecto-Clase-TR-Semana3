@@ -146,6 +146,7 @@ public class MedicoServiceImpl implements MedicoService{
 	public MedicoResponse cambiarDisponibilidad(Long idMedico, Long idDisponibilidad) {
 		Medico medico = obtenerMedicoOException(idMedico);
 	    DisponibilidadMedico nuevaDisponibilidad = DisponibilidadMedico.fromCodigo(idDisponibilidad);
+	    
 	    medico.setDisponibilidad(nuevaDisponibilidad);
 	    log.info("Disponibilidad del médico {} cambiada a {}", idMedico, nuevaDisponibilidad.getDescripcion());
 	    return medicoMapper.entityToResponse(medico);

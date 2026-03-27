@@ -74,6 +74,10 @@ public class PacienteServiceImpl implements PacienteService {
 		Paciente paciente = obtenerPacienteOException(id);
 		
 		log.info("Actualizando paciente con id: {}", id);
+		
+		if(citaClient.pacienteTieneCitasActivas(id)) {
+			throw new EntidadRelacionadaException("No se puede actualizar el Paciente porque tiene Citas Activas.");	
+		}
 
 		validarCambiosUnicos(request, id);
 		

@@ -69,7 +69,7 @@ public class CitaServiceImpl implements CitaService {
 		PacienteResponse paciente = obtenerPacienteResponse(request.idPaciente());
 		MedicoResponse medico = obtenerMedicoResponse(request.idMedico());
 
-		validarPacienteSinCitaActiva(request.idPaciente());
+		asegurarPacienteSinCitasActivas(request.idPaciente());
 
 		if (!medico.disponibilidad().equalsIgnoreCase(DisponibilidadMedico.DISPONIBLE.getDescripcion())) {
 			throw new IllegalArgumentException("El medico no esta disponible");
@@ -80,7 +80,7 @@ public class CitaServiceImpl implements CitaService {
 
 		cita = citaRepository.save(cita);
 
-		// Realizamos la petición HTTP externa
+		// Hacemos la petición externa por el Client
 		cambiarDisponibilidadMedico(request.idMedico(), DisponibilidadMedico.NO_DISPONIBLE);
 
 		log.info("Cita registrada existosamente: {}", cita);
@@ -93,9 +93,9 @@ public class CitaServiceImpl implements CitaService {
 		Cita cita = obtenerCitaOException(id);
 		log.info("Actualizando Cita con id: {}", id);
 
-		validarCitaActualizableEnEstado(cita);
+		asegurarCitaEnEstadoEditable(cita);
 
-		validarPacienteEnEdicion(request.idPaciente(), id);
+		asegurarPacienteNoTengaOtrasCitas(request.idPaciente(), id);
 
 		PacienteResponse paciente = obtenerPacienteResponse(request.idPaciente());
 		MedicoResponse medicoNuevo = obtenerMedicoResponse(request.idMedico());
@@ -103,8 +103,6 @@ public class CitaServiceImpl implements CitaService {
 		EstadoCita estadoAnterior = cita.getEstadoCita();
 		EstadoCita estadoNuevo = EstadoCita.fromCodigo(request.idEstadoCita());
 
-		// 3. Si el mentor quiere que cambie el estado, ¡debemos validar que sea un
-		// salto legal!
 		if (estadoAnterior != estadoNuevo) {
 			validarCambioEstadoCita(estadoAnterior, estadoNuevo);
 		}
@@ -112,7 +110,7 @@ public class CitaServiceImpl implements CitaService {
 		Long idMedicoAnterior = cita.getIdMedico();
 		Long idMedicoNuevo = request.idMedico();
 
-		// 4. Validamos si hay cambio de médico
+		//Validamos si hay cambio de médico
 		if (!idMedicoAnterior.equals(idMedicoNuevo)) {
 			if (!medicoNuevo.disponibilidad().equalsIgnoreCase(DisponibilidadMedico.DISPONIBLE.getDescripcion())) {
 				throw new IllegalArgumentException("El nuevo médico seleccionado no está disponible");
@@ -122,15 +120,12 @@ public class CitaServiceImpl implements CitaService {
 		citaMapper.updateEntityFromRequest(request, cita);
 		cita.setEstadoCita(estadoNuevo);
 
-		// 6. La hora de la verdad: La disponibilidad de los médicos
 		if (!idMedicoAnterior.equals(idMedicoNuevo)) {
-			// Si cambió el médico, liberamos al viejo incondicionalmente...
 			cambiarDisponibilidadMedico(idMedicoAnterior, DisponibilidadMedico.DISPONIBLE);
-			// ...y ocupamos al nuevo basándonos en el NUEVO ESTADO de la cita
+			
 			cambiarDisponibilidadMedico(idMedicoNuevo, mapearEstadoCitaADisponibilidad(estadoNuevo));
 		} else {
-			// Si es el MISMO médico, pero se cambió el ESTADO, sincronizamos su
-			// disponibilidad
+
 			if (estadoAnterior != estadoNuevo) {
 				sincronizarDisponibilidadMedico(idMedicoAnterior, estadoAnterior, estadoNuevo);
 			}
@@ -190,26 +185,22 @@ public class CitaServiceImpl implements CitaService {
 		switch (estadoActual) {
 		case PENDIENTE: {
 			if (estadoNuevo != EstadoCita.CONFIRMADA && estadoNuevo != EstadoCita.CANCELADA) {
-				throw new IllegalArgumentException("Una Cita PENDIENTE solo puede cambiar a CONFIRMADA o CANCELADA");
+				throw new IllegalArgumentException("Una Cita PENDIENTE solo puede cambiar a CONFIRMADA o CANCELADA");}
 			}
-		}
 			break;
 		case CONFIRMADA: {
 			if (estadoNuevo != EstadoCita.EN_CURSO && estadoNuevo != EstadoCita.CANCELADA) {
-				throw new IllegalArgumentException("Una Cita CONFIRMADA solo puede cambiar a EN CURSO  o CANCELADA");
+				throw new IllegalArgumentException("Una Cita CONFIRMADA solo puede cambiar a EN CURSO  o CANCELADA");}
 			}
-		}
 			break;
 		case EN_CURSO: {
 			if (estadoNuevo != EstadoCita.FINALIZADA) {
-				throw new IllegalArgumentException("Una Cita EN CURSO solo puede cambiar a FINALIZADA");
+				throw new IllegalArgumentException("Una Cita EN CURSO solo puede cambiar a FINALIZADA");}
 			}
-		}
 			break;
 		case FINALIZADA:
 		case CANCELADA: {
-			throw new IllegalArgumentException("Una cita FINALIZADA o CANCELADA no puede cambiar de estado");
-		}
+			throw new IllegalArgumentException("Una cita FINALIZADA o CANCELADA no puede cambiar de estado");}
 		}
 	}
 
@@ -230,15 +221,14 @@ public class CitaServiceImpl implements CitaService {
 		DisponibilidadMedico disponibilidadAnterior = mapearEstadoCitaADisponibilidad(estadoAnterior);
 		DisponibilidadMedico disponibilidadNueva = mapearEstadoCitaADisponibilidad(estadoNuevo);
 
-		// Solo actualizar si la disponibilidad cambia
-		if (disponibilidadAnterior != disponibilidadNueva) {
+		if (disponibilidadAnterior != disponibilidadNueva) {	// Solo actualizar si la disponibilidad cambia
 			medicoClient.cambiarDisponibilidad(idMedico, disponibilidadNueva.getCodigo());
 			log.info("Disponibilidad del médico {} actualizada de {} a {}", idMedico, disponibilidadAnterior,
 					disponibilidadNueva);
 		}
 	}
 
-	private void validarPacienteSinCitaActiva(Long idPaciente) {
+	private void asegurarPacienteSinCitasActivas(Long idPaciente) {
 		boolean tieneCitaActiva = citaRepository.existsByIdPacienteAndEstadoRegistroAndEstadoCitaIn(idPaciente,
 				EstadoRegistro.ACTIVO, List.of(EstadoCita.PENDIENTE, EstadoCita.CONFIRMADA, EstadoCita.EN_CURSO));
 
@@ -248,7 +238,7 @@ public class CitaServiceImpl implements CitaService {
 		}
 	}
 
-	private void validarCitaActualizableEnEstado(Cita cita) {
+	private void asegurarCitaEnEstadoEditable(Cita cita) {
 		if (cita.getEstadoCita() != EstadoCita.PENDIENTE && cita.getEstadoCita() != EstadoCita.CONFIRMADA) {
 			throw new IllegalArgumentException(
 					"La cita solo puede actualizarse mediante PUT en estados PENDIENTE o CONFIRMADA. Estado actual: "
@@ -256,7 +246,7 @@ public class CitaServiceImpl implements CitaService {
 		}
 	}
 
-	private void validarPacienteEnEdicion(Long idPaciente, Long idCitaActual) {
+	private void asegurarPacienteNoTengaOtrasCitas(Long idPaciente, Long idCitaActual) {
 		boolean tieneOtraCita = citaRepository.existsByIdPacienteAndEstadoRegistroAndEstadoCitaInAndIdNot(idPaciente,
 				EstadoRegistro.ACTIVO, List.of(EstadoCita.PENDIENTE, EstadoCita.CONFIRMADA, EstadoCita.EN_CURSO),
 				idCitaActual);
